@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แผนการสอน: MySQL Stored Procedures</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 25px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        header {
+            text-align: center;
+            border-bottom: 2px solid #00568c;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        header h1 {
+            color: #00568c;
+            margin: 0;
+        }
+        header p {
+            margin: 5px 0 0;
+            color: #666;
+            font-size: 1.1em;
+        }
+        h2 {
+            color: #00568c;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        h3 {
+            color: #0073bb;
+        }
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95em;
+        }
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .note {
+            background-color: #e7f3fe;
+            border-left: 5px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .disadvantages {
+            background-color: #fff0f0;
+            border-left: 5px solid #f44336;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .advantages {
+            background-color: #f0fff0;
+            border-left: 5px solid #4CAF50;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        ul {
+            list-style-type: '🚀';
+            padding-left: 20px;
+        }
+        li {
+            padding-left: 10px;
+            margin-bottom: 10px;
+        }
+        hr {
+            border: 0;
+            height: 1px;
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0));
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>แผนการสอน: MySQL Stored Procedures</h1>
+            <p>สำหรับนักศึกษาวิศวกรรมซอฟต์แวร์ | ชุดข้อมูล (Dataset): classicmodels</p>
+        </header>
+
+        <section>
+            <h2>ส่วนที่ 1: Stored Procedure คืออะไร และทำไมเราถึงควรใช้? 🎯</h2>
+            <h3>Stored Procedure คืออะไร?</h3>
+            <p>
+                Stored Procedure คือ <strong>"ฟังก์ชัน" หรือ "สูตรสำเร็จ"</strong> ที่เราเขียนคำสั่ง SQL ที่ใช้งานบ่อยๆ เก็บไว้ใน Database Server แทนที่เราจะต้องพิมพ์คำสั่ง SQL ยาวๆ ซ้ำไปซ้ำมา เราแค่เรียกใช้ "ชื่อฟังก์ชัน" ที่เราตั้งไว้เท่านั้นเอง
+            </p>
+            <div class="note">
+                <strong>ตัวอย่างเปรียบเทียบ:</strong>
+                <ul>
+                    <li><b>แบบเดิม (ไม่ใช้ SP):</b> Application ส่งโค้ด SQL ยาวๆ เพื่อดึงข้อมูลสินค้าคงคลังไปให้ Server ทุกครั้งที่ต้องการ</li>
+                    <li><b>แบบใหม่ (ใช้ SP):</b> Application แค่สั่ง <code>CALL GetInventory();</code> ไปที่ Server สั้นๆ</li>
+                </ul>
+            </div>
+            
+            <h3>ทำไม Software Engineer ถึงต้องใช้ Stored Procedure?</h3>
+            <ul>
+                <li><strong>ประสิทธิภาพ (Performance):</strong> เนื่องจาก Stored Procedure ถูกคอมไพล์และเก็บไว้ที่ Server แล้ว การเรียกใช้งานครั้งถัดๆ ไปจึงทำงานได้เร็วกว่าการส่งคำสั่ง SQL ดิบๆ ไปประมวลผลใหม่ทุกครั้ง</li>
+                <li><strong>ความปลอดภัย (Security):</strong> เราสามารถจำกัดสิทธิ์ให้ Application เรียกใช้ได้แค่ Stored Procedure บางตัว โดยไม่ต้องให้สิทธิ์เข้าถึงตารางข้อมูลโดยตรง เช่น ให้สิทธิ์ `EXECUTE` บน SP `AddNewOrder` แต่ไม่ให้สิทธิ์ `INSERT` บนตาราง `orders` โดยตรง</li>
+                <li><strong>ใช้ซ้ำและดูแลรักษาง่าย (Reusability & Maintainability):</strong> โค้ด Business Logic ที่สำคัญจะถูกรวมศูนย์ไว้ที่เดียว หากต้องการแก้ไข Logic การคำนวณราคาสินค้า ก็แก้แค่ที่ SP ที่เดียว ไม่ต้องไปไล่แก้ในทุก Application ที่เรียกใช้งาน</li>
+                <li><strong>ลดภาระ Network (Reduce Network Traffic):</strong> แทนที่จะส่งคำสั่ง SQL ยาวหลายร้อยบรรทัดข้ามเครือข่าย เราส่งแค่ชื่อ Procedure และ Parameters ไม่กี่ตัวไปเท่านั้น ทำให้การสื่อสารระหว่าง Application กับ Database มีประสิทธิภาพมากขึ้น</li>
+            </ul>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2>ส่วนที่ 2: ไวยากรณ์พื้นฐาน (Basic Syntax) ✍️</h2>
+            <h3>โครงสร้างการสร้าง Stored Procedure</h3>
+            <pre><code>DELIMITER $$
+
+CREATE PROCEDURE procedure_name (parameter_list)
+BEGIN
+   -- ส่วนของคำสั่ง SQL ที่จะให้ทำงาน
+   -- สามารถมีได้หลายคำสั่ง
+   SELECT * FROM employees;
+END$$
+
+DELIMITER ;</code></pre>
+            <ul>
+                <li><code>DELIMITER $$</code>: เป็นการบอก MySQL ชั่วคราวว่าเครื่องหมายจบคำสั่งจะเปลี่ยนจาก <code>;</code> เป็น <code>$$</code> เพื่อป้องกันการสับสนภายในบล็อก BEGIN...END</li>
+                <li><code>CREATE PROCEDURE procedure_name()</code>: คือคำสั่งสร้าง Procedure ตามด้วยชื่อที่ต้องการ</li>
+                <li><code>BEGIN ... END</code>: เป็นส่วนที่จะบรรจุชุดคำสั่ง SQL</li>
+            </ul>
+
+            <h3>การเรียกใช้งาน (Execution)</h3>
+            <p>ใช้คำสั่ง <code>CALL</code> ตามด้วยชื่อ Procedure ที่เราสร้างไว้</p>
+            <pre><code>CALL procedure_name();</code></pre>
+
+            <h3>ตัวอย่างที่ 1: ดึงข้อมูลพนักงานทั้งหมด</h3>
+            <pre><code>-- เปลี่ยน Delimiter ชั่วคราว
+DELIMITER $$
+
+-- สร้าง Procedure ชื่อ GetAllEmployees
+CREATE PROCEDURE GetAllEmployees()
+BEGIN
+   SELECT 
+      firstName, 
+      lastName, 
+      jobTitle, 
+      email 
+   FROM 
+      employees;
+END$$
+
+-- เปลี่ยน Delimiter กลับเป็นเหมือนเดิม
+DELIMITER ;</code></pre>
+            
+            <h4>วิธีเรียกใช้:</h4>
+            <pre><code>CALL GetAllEmployees();</code></pre>
+        </section>
+
+        <hr>
+        
+        <section>
+            <h2>ส่วนที่ 3: การใช้งานพารามิเตอร์ (Parameters) 📥📤</h2>
+            <p>Parameters ทำให้ Stored Procedure ของเรายืดหยุ่นและนำไปใช้ซ้ำได้หลากหลายมากขึ้น โดยมี 3 โหมดหลักๆ คือ:</p>
+            <ul>
+                <li><strong><code>IN</code> (Input):</strong> เป็นโหมด Default ใช้สำหรับ <strong>"รับค่า"</strong> จากภายนอกเข้ามาประมวลผลใน Procedure</li>
+                <li><strong><code>OUT</code> (Output):</strong> ใช้สำหรับ <strong>"ส่งค่ากลับ"</strong> ออกไปให้ตัวเรียก</li>
+                <li><strong><code>INOUT</code> (Input/Output):</strong> เป็นการรวมกันของ <code>IN</code> และ <code>OUT</code> คือสามารถ <strong>"รับค่าเข้ามาและส่งค่าที่เปลี่ยนแปลงแล้วกลับออกไป"</strong> ได้</li>
+            </ul>
+            
+            <h3>ตัวอย่างที่ 2 (IN): ค้นหาลูกค้าจากประเทศที่กำหนด</h3>
+            <pre><code>DELIMITER $$
+
+CREATE PROCEDURE FindCustomersByCountry(IN countryName VARCHAR(50))
+BEGIN
+    SELECT 
+        customerName, 
+        city, 
+        phone 
+    FROM 
+        customers 
+    WHERE 
+        country = countryName;
+END$$
+
+DELIMITER ;</code></pre>
+            <h4>วิธีเรียกใช้:</h4>
+            <pre><code>CALL FindCustomersByCountry('USA');
+CALL FindCustomersByCountry('France');</code></pre>
+            
+            <h3>ตัวอย่างที่ 3 (OUT): นับจำนวนออเดอร์ตามสถานะ</h3>
+            <pre><code>DELIMITER $$
+
+CREATE PROCEDURE CountOrdersByStatus(
+    IN orderStatus VARCHAR(25), 
+    OUT totalOrders INT
+)
+BEGIN
+    SELECT 
+        COUNT(orderNumber)
+    INTO 
+        totalOrders
+    FROM 
+        orders
+    WHERE 
+        status = orderStatus;
+END$$
+
+DELIMITER ;</code></pre>
+            <h4>วิธีเรียกใช้:</h4>
+            <pre><code>-- เรียกใช้เพื่อนับออเดอร์ที่ 'Shipped' และเก็บผลลัพธ์ในตัวแปร @shippedCount
+CALL CountOrdersByStatus('Shipped', @shippedCount);
+
+-- แสดงผลลัพธ์ที่เก็บในตัวแปร
+SELECT @shippedCount AS Shipped_Orders;
+
+-- ลองกับสถานะอื่น
+CALL CountOrdersByStatus('Cancelled', @cancelledCount);
+SELECT @cancelledCount AS Cancelled_Orders;</code></pre>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2>ส่วนที่ 4: การเขียน Logic ขั้นสูง (Programming Logic) 🧠</h2>
+            <h3>1. การใช้ตัวแปร (Variables)</h3>
+            <p>ใช้ <code>DECLARE</code> เพื่อสร้างตัวแปรสำหรับเก็บค่าชั่วคราวภายใน <code>BEGIN...END</code> block</p>
+            <p><b>ไวยากรณ์:</b> <code>DECLARE variable_name datatype [DEFAULT default_value];</code></p>
+            
+            <h4>ตัวอย่างที่ 4: คำนวณยอดขายรวมของลูกค้ารายหนึ่ง</h4>
+            <pre><code>DELIMITER $$
+
+CREATE PROCEDURE GetTotalPaymentByCustomer(
+    IN p_customerNumber INT,
+    OUT p_totalAmount DECIMAL(10, 2)
+)
+BEGIN
+    -- ประกาศตัวแปรสำหรับเก็บยอดรวม
+    DECLARE total_payment DECIMAL(10, 2) DEFAULT 0.0;
+
+    -- คำนวณยอดรวมจากตาราง payments
+    SELECT SUM(amount)
+    INTO total_payment
+    FROM payments
+    WHERE customerNumber = p_customerNumber;
+
+    -- กำหนดค่าให้กับ OUT parameter
+    SET p_totalAmount = total_payment;
+END$$
+
+DELIMITER ;</code></pre>
+            <h4>วิธีเรียกใช้:</h4>
+            <pre><code>CALL GetTotalPaymentByCustomer(141, @total);
+SELECT @total AS 'Euro+ Shopping Channel Total Payment';</code></pre>
+            
+            <h3>2. การใช้เงื่อนไข (IF-THEN-ELSEIF-ELSE Statement)</h3>
+            <p>ใช้ในการสร้างเงื่อนไขเพื่อควบคุมการทำงานของโปรแกรม</p>
+            <h4>ตัวอย่างที่ 5: จัดระดับลูกค้าตามยอด Credit Limit</h4>
+            <pre><code>DELIMITER $$
+
+CREATE PROCEDURE GetCustomerLevel(
+    IN p_customerNumber INT,
+    OUT p_customerLevel VARCHAR(20)
+)
+BEGIN
+    -- ประกาศตัวแปรสำหรับเก็บ creditLimit
+    DECLARE customer_credit DECIMAL(10, 2) DEFAULT 0;
+
+    -- ดึงค่า creditLimit ของลูกค้า
+    SELECT creditLimit 
+    INTO customer_credit
+    FROM customers
+    WHERE customerNumber = p_customerNumber;
+
+    -- เริ่มตรวจสอบเงื่อนไข
+    IF customer_credit > 100000 THEN
+        SET p_customerLevel = 'PLATINUM';
+    ELSEIF customer_credit <= 100000 AND customer_credit > 50000 THEN
+        SET p_customerLevel = 'GOLD';
+    ELSE
+        SET p_customerLevel = 'SILVER';
+    END IF;
+END$$
+
+DELIMITER ;</code></pre>
+            <h4>วิธีเรียกใช้:</h4>
+            <pre><code>-- ลูกค้า PLATINUM (เช่น customerNumber 141)
+CALL GetCustomerLevel(141, @level);
+SELECT @level;
+
+-- ลูกค้า GOLD (เช่น customerNumber 112)
+CALL GetCustomerLevel(112, @level);
+SELECT @level;</code></pre>
+        </section>
+
+        <hr>
+        
+        <section>
+            <h2>ส่วนที่ 5: ข้อดี-ข้อเสีย และ Best Practices</h2>
+            <div class="advantages">
+                <h3>สรุปข้อดี (Advantages)</h3>
+                <ul>
+                    <li>ลด Network Traffic</li>
+                    <li>รวม Business Logic ไว้ที่ศูนย์กลาง</li>
+                    <li>เพิ่มความปลอดภัย</li>
+                    <li>ประสิทธิภาพสูง</li>
+                </ul>
+            </div>
+            <div class="disadvantages">
+                <h3>ข้อควรระวัง (Disadvantages)</h3>
+                <ul>
+                    <li><b>การใช้ทรัพยากร (Memory/CPU):</b> หากมี SP จำนวนมากและมีการคำนวณที่ซับซ้อน อาจใช้ Memory และ CPU ของ Server สูงขึ้น</li>
+                    <li><b>การแก้ไขและทดสอบ (Troubleshooting):</b> การ Debug ใน MySQL Stored Procedure ทำได้ค่อนข้างยากกว่าภาษาโปรแกรมทั่วไป</li>
+                    <li><b>ความเชี่ยวชาญ (Maintenance):</b> ต้องการนักพัฒนาที่มีทักษะเฉพาะทางด้านฐานข้อมูลในการดูแลรักษา</li>
+                </ul>
+            </div>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2>แบบฝึกหัด (Workshop & Q&A) 💻</h2>
+            <p>หลังจากสอนเนื้อหาทั้งหมดแล้ว ให้เวลาให้นักศึกษาลงมือทำโจทย์จากง่ายไปยาก</p>
+            <div class="note">
+                <p><strong>โจทย์ข้อที่ 1 (ง่าย):</strong>
+                สร้าง Stored Procedure ชื่อ <code>GetProductDetail</code> ที่รับ <code>productCode</code> (IN) เข้ามา และแสดงผล <code>productName</code>, <code>productDescription</code>, และ <code>MSRP</code> ของสินค้านั้น</p>
+                <hr>
+                <p><strong>โจทย์ข้อที่ 2 (ปานกลาง):</strong>
+                สร้าง Stored Procedure ชื่อ <code>UpdateStock</code> ที่รับ <code>productCode</code> (IN) และจำนวนสินค้าที่ขายไป <code>soldQuantity</code> (IN) เข้ามา จากนั้นให้ทำการ <strong>อัปเดต</strong> ค่า <code>quantityInStock</code> ในตาราง <code>products</code> ให้ลดลงตามจำนวนที่ขายไป</p>
+                <hr>
+                <p><strong>โจทย์ข้อที่ 3 (ท้าทาย):</strong>
+                สร้าง Stored Procedure ชื่อ <code>FindTopSpender</code> ที่ <strong>ไม่ต้องรับค่าอะไรเลย</strong> แต่ให้ <strong>ส่งค่ากลับ (OUT)</strong> เป็น <code>customerName</code> และ <code>totalSpent</code> ของลูกค้าที่มียอดจ่ายเงิน (payments) รวมสูงสุด</p>
+            </div>
+        </section>
+    </div>
+
+</body>
+</html>
